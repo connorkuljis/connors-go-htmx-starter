@@ -5,14 +5,11 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"path/filepath"
 	"text/template"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 )
-
-const SessionName = "session"
 
 // Server encapsulates all dependencies for the web server.
 // HTTP handlers access information via receiver types.
@@ -26,38 +23,39 @@ type Server struct {
 }
 
 //go:embed templates/* static/*
-var inMemoryFS embed.FS
+var embedFS embed.FS
 
 type HTMLFile string
 
 const (
-	RootHTML   HTMLFile = "root.html"
-	HeadHTML   HTMLFile = "head.html"
-	LayoutHTML HTMLFile = "layout.html"
-	HeroHTML   HTMLFile = "components/hero.html"
-	FooterHTML HTMLFile = "components/footer.html"
+	TemplatesDirName = "templates"
+	StaticDirName    = "static"
+	Port             = "8080"
+
+	RootHTML   HTMLFile = "templates/root.html"
+	HeadHTML   HTMLFile = "templates/head.html"
+	LayoutHTML HTMLFile = "templates/layout.html"
+	HeroHTML   HTMLFile = "templates/components/hero.html"
+	FooterHTML HTMLFile = "templates/components/footer.html"
 )
 
 func main() {
-	port := "8080"
-	// router := http.NewServeMux()
 	router := chi.NewMux()
 	store := sessions.NewCookieStore([]byte("special_key"))
-	templateDir := "templates"
-	staticDir := "static"
-
-	log.Println("[ 💿 Spinning up server on http://localhost:" + port + " ]")
 
 	s := Server{
 		Router:       router,
-		Port:         port,
-		TemplatesDir: templateDir,
-		StaticDir:    staticDir,
-		FileSystem:   inMemoryFS,
+		Port:         Port,
+		TemplatesDir: TemplatesDirName,
+		StaticDir:    StaticDirName,
+		FileSystem:   embedFS,
 		Sessions:     store,
 	}
 
-	s.routes()
+	s.Router.Handle("/static/*", http.FileServer(http.FS(s.FileSystem)))
+	s.Router.HandleFunc("/", s.handleIndex())
+
+	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")
 
 	err := http.ListenAndServe(":"+s.Port, s.Router)
 	if err != nil {
@@ -65,28 +63,8 @@ func main() {
 	}
 }
 
-func compileTemplates(s *Server, files []HTMLFile) *template.Template {
-	var filenames []string
-	for i := range files {
-		currentFilename := string(files[i])
-		filenames = append(filenames, filepath.Join(s.TemplatesDir, currentFilename))
-	}
-
-	tmpl, err := template.ParseFS(s.FileSystem, filenames...)
-	if err != nil {
-		panic(err)
-	}
-
-	return tmpl
-}
-
-func (s *Server) routes() {
-	s.Router.Handle("/static/*", http.FileServer(http.FS(s.FileSystem)))
-	s.Router.HandleFunc("/", s.handleIndex())
-}
-
 func (s *Server) handleIndex() http.HandlerFunc {
-	type PageData struct {
+	type ViewData struct {
 		Username string
 		Option   string
 		Offset   string
@@ -100,9 +78,29 @@ func (s *Server) handleIndex() http.HandlerFunc {
 		FooterHTML,
 	}
 
-	tmpl := compileTemplates(s, indexHTML)
+	tmpl := s.compileTemplates("index.html", indexHTML, nil)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		tmpl.ExecuteTemplate(w, "root", nil)
 	}
+}
+
+func (s *Server) compileTemplates(name string, targets []HTMLFile, funcs template.FuncMap) *template.Template {
+	tmpl := template.New(name)
+
+	if funcs != nil {
+		tmpl.Funcs(funcs)
+	}
+
+	var matchedTargets []string
+	for _, file := range targets {
+		matchedTargets = append(matchedTargets, string(file))
+	}
+
+	tmpl, err := tmpl.ParseFS(s.FileSystem, matchedTargets...)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return tmpl
 }
