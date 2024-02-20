@@ -1,0 +1,7 @@
+{{ define "view"}}
+<h2>{{ .PageTitle }}</h2>
+<p>Welcome {{ .Username }} to the index page.</p>
+
+{{ if .SiteData.DevMode }}
+<p>Developer Mode Enabled: {{ . }}</p>
+{{ end }} {{ end }}

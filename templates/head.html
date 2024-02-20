@@ -1,21 +1,24 @@
 {{ define "head" }}
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>go+htmx</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ .SiteData.Title }}</title>
 
-	<link rel="stylesheet" href="../static/css/reset.css">
-	<link rel="icon" type="img/png" href="../static/icon.png">
+  <link rel="stylesheet" href="../static/css/reset.css" />
+  <link rel="icon" type="img/png" href="../static/icon.png" />
 
-	<!-- Development no-cache -->
-	<meta http-equiv="cache-control" content="no-cache">
+  {{ if .SiteData.DevMode -}}
+  <meta http-equiv="cache-control" content="no-cache" />
+  {{- end }}
 
-	<script src="https://unpkg.com/htmx.org@1.9.9"
-		integrity="sha384-QFjmbokDn2DjBjq+fM+8LUIVrAgqcNW2s0PjAxHETgRn9l4fvX31ZxDxvwQnyMOX" crossorigin="anonymous">
-		</script>
-	<script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js"></script>
-	<script src="https://cdn.jsdelivr.net/gh/gnat/surreal/surreal.js"></script>
+  <script
+    src="https://unpkg.com/htmx.org@1.9.9"
+    integrity="sha384-QFjmbokDn2DjBjq+fM+8LUIVrAgqcNW2s0PjAxHETgRn9l4fvX31ZxDxvwQnyMOX"
+    crossorigin="anonymous"
+  ></script>
+  <script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/gnat/surreal/surreal.js"></script>
 </head>
 
 {{ end}}
