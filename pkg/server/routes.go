@@ -6,11 +6,6 @@ import (
 	"text/template"
 )
 
-type SiteData struct {
-	Title   string
-	DevMode bool
-}
-
 // set up routes
 func (s *server) Routes() {
 	siteData := SiteData{
