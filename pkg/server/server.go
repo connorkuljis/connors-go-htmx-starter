@@ -18,18 +18,18 @@ func NewServer(port string, router *http.ServeMux, templatesDir string, staticDi
 }
 
 // Common html files used to compile a base view to render a view
-func baseView() View {
-	baseView := View{rootHTML, headHTML, layoutHTML, navHTML, footerHTML}
+func baseView() view {
+	baseView := view{rootHTML, headHTML, layoutHTML, navHTML, footerHTML}
 	return baseView
 }
 
 // Returns the template for the index view
-func (s *server) indexView() *template.Template {
+func (s *server) indexViewTmpl() *template.Template {
 	return compile(s, "index", append(baseView(), indexHTML), nil)
 }
 
 // compiles a template from a view.
-func compile(s *server, name string, view View, funcs template.FuncMap) *template.Template {
+func compile(s *server, name string, html view, funcs template.FuncMap) *template.Template {
 	// give the template a name
 	tmpl := template.New(name)
 
@@ -40,8 +40,8 @@ func compile(s *server, name string, view View, funcs template.FuncMap) *templat
 
 	// create a collection of files from the view
 	var files []string
-	for _, htmlFile := range view {
-		files = append(files, string(htmlFile))
+	for _, doc := range html {
+		files = append(files, string(doc))
 	}
 
 	// generate a template from the files in the server fs (usually embedded)

@@ -17,8 +17,7 @@ const (
 
 type htmlFile string
 
-// A View is a collection of HTML Files
-type View []htmlFile
+type view []htmlFile
 
 // Server encapsulates all dependencies for the web server.
 // HTTP handlers access information via receiver types.
@@ -30,7 +29,8 @@ type server struct {
 	FileSystem   fs.FS  // in-memory or disk
 }
 
-type SiteData struct {
+// Represents site information
+type siteData struct {
 	Title   string
 	DevMode bool
 }

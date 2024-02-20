@@ -8,13 +8,12 @@ import (
 
 // set up routes
 func (s *server) Routes() {
-	siteData := SiteData{
+	sData := siteData{
 		Title:   "connors-go-htmx-starter",
 		DevMode: true,
 	}
-
 	s.Router.Handle("/static/*", http.FileServer(http.FS(s.FileSystem)))
-	s.Router.HandleFunc("/", middleWareEx1(s.handleIndex(s.indexView(), siteData)))
+	s.Router.HandleFunc("/", middleWareEx1(s.handleIndex(s.indexViewTmpl(), sData)))
 }
 
 // outputs the request method type
@@ -25,9 +24,9 @@ func middleWareEx1(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (s *server) handleIndex(tmpl *template.Template, siteData SiteData) http.HandlerFunc {
+func (s *server) handleIndex(tmpl *template.Template, sData siteData) http.HandlerFunc {
 	type ViewData struct {
-		SiteData SiteData
+		SiteData siteData
 
 		PageTitle string
 		Username  string
@@ -36,7 +35,7 @@ func (s *server) handleIndex(tmpl *template.Template, siteData SiteData) http.Ha
 	}
 
 	data := ViewData{
-		SiteData: siteData,
+		SiteData: sData,
 
 		PageTitle: "Index",
 		Username:  "connorkuljis",
