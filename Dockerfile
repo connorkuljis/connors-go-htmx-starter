@@ -1,11 +1,15 @@
 # Dockerfile
-FROM golang:latest
+FROM golang AS builder
 
 WORKDIR /app
 
 COPY . .
 
-RUN go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+
+FROM alpine
+
+COPY --from=builder /app/main .
 
 CMD ["./main"]
 
