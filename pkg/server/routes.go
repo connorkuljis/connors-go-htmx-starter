@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"net/http"
 	"text/template"
 )
@@ -13,15 +12,10 @@ func (s *server) Routes() {
 		DevMode: true,
 	}
 	s.Router.Handle("/static/*", http.FileServer(http.FS(s.FileSystem)))
-	s.Router.HandleFunc("/", middleWareEx1(s.handleIndex(s.indexViewTmpl(), sData)))
-}
 
-// outputs the request method type
-func middleWareEx1(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Request method: %s", r.Method)
-		next.ServeHTTP(w, r)
-	}
+	s.Router.HandleFunc("/", s.handleIndex(s.getIndexTemplate(), sData))
+	s.Router.HandleFunc("/projects/", s.handleProjects(s.getProjectsTemplate(), sData))
+	s.Router.HandleFunc("/api/projects/", s.handleApiProjects(s.getApiProjectsPartial()))
 }
 
 func (s *server) handleIndex(tmpl *template.Template, sData siteData) http.HandlerFunc {
@@ -41,6 +35,26 @@ func (s *server) handleIndex(tmpl *template.Template, sData siteData) http.Handl
 		Username:  "connorkuljis",
 		Option:    "dev",
 		Offset:    "-2",
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		tmpl.ExecuteTemplate(w, "root", data)
+	}
+}
+
+func (s *server) handleProjects(tmpl *template.Template, sData siteData) http.HandlerFunc {
+	type ViewData struct {
+		SiteData siteData
+
+		PageTitle string
+		Username  string
+	}
+
+	data := ViewData{
+		SiteData: sData,
+
+		PageTitle: "Projects",
+		Username:  "connorkuljis",
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

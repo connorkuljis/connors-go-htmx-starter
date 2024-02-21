@@ -1,0 +1,10 @@
+{{ define "view" }}
+
+<h2>{{ .PageTitle }}</h2>
+<p>Welcome {{ .Username }} to the projects page.</p>
+
+<div hx-get="/api/projects" hx-push-url="true">Click me to get projects</div>
+
+{{ if .SiteData.DevMode }}
+<pre>Developer Mode Enabled: {{ . }}</pre>
+{{ end }} {{ end }}

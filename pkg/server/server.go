@@ -24,8 +24,17 @@ func baseView() view {
 }
 
 // Returns the template for the index view
-func (s *server) indexViewTmpl() *template.Template {
+func (s *server) getIndexTemplate() *template.Template {
 	return compile(s, "index", append(baseView(), indexHTML), nil)
+}
+
+// Returns the template for the projects view
+func (s *server) getProjectsTemplate() *template.Template {
+	return compile(s, "projects", append(baseView(), projectsHTML), nil)
+}
+
+func (s *server) getApiProjectsPartial() *template.Template {
+	return compile(s, "projects-partial", view{projectsHTMLPartial}, nil)
 }
 
 // compiles a template from a view.

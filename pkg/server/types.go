@@ -6,13 +6,15 @@ import (
 )
 
 const (
-	headHTML   = "templates/head.html"
-	layoutHTML = "templates/layout.html"
-	rootHTML   = "templates/root.html"
-	heroHTML   = "templates/components/hero.html"
-	footerHTML = "templates/components/footer.html"
-	navHTML    = "templates/components/nav.html"
-	indexHTML  = "templates/views/index.html"
+	headHTML            = "templates/head.html"
+	layoutHTML          = "templates/layout.html"
+	rootHTML            = "templates/root.html"
+	heroHTML            = "templates/components/hero.html"
+	footerHTML          = "templates/components/footer.html"
+	navHTML             = "templates/components/nav.html"
+	indexHTML           = "templates/views/index.html"
+	projectsHTML        = "templates/views/projects.html"
+	projectsHTMLPartial = "templates/partials/projects.html"
 )
 
 type htmlFile string
