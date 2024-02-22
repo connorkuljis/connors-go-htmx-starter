@@ -15,12 +15,22 @@ const (
 	port             = "8080"
 	staticDirName    = "static"
 	templatesDirName = "templates"
+	title            = "connors-go-htmx-starter"
+	devModeEnabled   = true
 )
 
 func main() {
 	router := http.NewServeMux()
 
-	s := server.NewServer(port, router, templatesDirName, staticDirName, embedFS)
+	s := server.NewServer(
+		router,
+		embedFS,
+		port,
+		templatesDirName,
+		staticDirName,
+		title,
+		devModeEnabled,
+	)
 
 	s.Routes()
 

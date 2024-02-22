@@ -3,8 +3,8 @@
 <h2>{{ .PageTitle }}</h2>
 <p>Welcome {{ .Username }} to the projects page.</p>
 
-<div hx-get="/api/projects" hx-push-url="true">Click me to get projects</div>
+<div hx-get="/partials/projects">Click me to get projects</div>
 
-{{ if .SiteData.DevMode }}
+{{ if .SiteData.DevModeEnabled }}
 <pre>Developer Mode Enabled: {{ . }}</pre>
 {{ end }} {{ end }}

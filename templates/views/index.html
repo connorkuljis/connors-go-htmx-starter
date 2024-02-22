@@ -4,6 +4,6 @@
 
 <p>Welcome {{ .Username }} to the index page.</p>
 
-{{ if .SiteData.DevMode }}
+{{ if .SiteData.DevModeEnabled }}
 <p>Developer Mode Enabled: {{ . }}</p>
 {{ end }} {{ end }}

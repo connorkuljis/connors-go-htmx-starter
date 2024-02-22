@@ -5,7 +5,7 @@ import (
 	"text/template"
 )
 
-func (s *server) handleApiProjects(tmpl *template.Template) http.HandlerFunc {
+func (s *server) handlePartialProjects(tmpl *template.Template) http.HandlerFunc {
 	type ViewData struct {
 		Projects []string
 	}

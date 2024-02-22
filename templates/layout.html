@@ -1,2 +1,5 @@
-{{ define "layout" }} {{- template "nav" . -}} {{- template "view" . -}} {{-
-template "footer" . -}} {{ end }}
+{{ define "layout" }}
+<body>
+  {{- template "nav" . -}} {{- template "view" . -}} {{ template "footer" . -}}
+</body>
+{{ end }}
