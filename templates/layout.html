@@ -1,5 +1,15 @@
 {{ define "layout" }}
-<body>
-  {{- template "nav" . -}} {{- template "view" . -}} {{ template "footer" . -}}
+<body class="container">
+  <!-- begin header -->
+  {{- template "header" . -}}
+  <!-- end header -->
+
+  <!-- begin view -->
+  <main>{{- template "view" . -}}</main>
+  <!-- end view -->
+
+  <!-- begin footer -->
+  {{- template "footer" . -}}
+  <!-- end footer -->
 </body>
 {{ end }}

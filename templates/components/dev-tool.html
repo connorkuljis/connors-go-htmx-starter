@@ -1,0 +1,6 @@
+{{ define "dev-tool" }} {{ if .SiteData.DevModeEnabled }}
+<div>
+  <p>DevModeEnabled = {{ .SiteData.DevModeEnabled }}</p>
+  <code>{{ . }}</code>
+</div>
+{{ end }} {{ end }}

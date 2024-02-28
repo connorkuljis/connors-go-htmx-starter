@@ -1,9 +1,11 @@
-{{ define "view"}}
-
-<h2>{{ .PageTitle }}</h2>
-
+{{ define "view" }}
+<h2 id="title">{{ .PageTitle }}</h2>
 <p>Welcome {{ .Username }} to the index page.</p>
-
-{{ if .SiteData.DevModeEnabled }}
-<p>Developer Mode Enabled: {{ . }}</p>
-{{ end }} {{ end }}
+<h3 id="rules">Some rules</h3>
+<ul>
+  <li>Good structures save energy.</li>
+  <li>Users scan, not read.</li>
+  <li>Content first, then style.</li>
+  <li>Forms and links build the castle.</li>
+</ul>
+{{ end }}
