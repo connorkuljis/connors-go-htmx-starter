@@ -7,45 +7,36 @@ import (
 	"text/template"
 )
 
-const (
-	IndexView    = "templates/views/index.html"
-	ProjectsView = "templates/views/projects.html"
-)
-
-// getBaseTemplates returns the base view including any subtemplates
-func getBaseTemplates(subtemplates ...string) []string {
-	base := []string{
-		"templates/root.html",
-		"templates/head.html",
-		"templates/layout.html",
-		"templates/components/dev-tool.html",
-		"templates/components/header.html",
-		"templates/components/nav.html",
-		"templates/components/footer.html",
+// getIndexTemplate parses joined base and index view templates.
+func IndexTemplate(s *server) *template.Template {
+	view := []string{
+		s.Templates.BaseLayout.Head,
+		s.Templates.BaseLayout.Root,
+		s.Templates.BaseLayout.Layout,
+		s.Templates.Components.DevTool,
+		s.Templates.Components.Header,
+		s.Templates.Components.Footer,
+		s.Templates.Components.Nav,
+		s.Templates.Views.Index,
 	}
 
-	return append(base, subtemplates...)
-}
-
-// getIndexTemplate parses joined base and index view templates.
-func (s *server) getIndexTemplate() *template.Template {
-	return parseTemplate(s, "index.html", nil, getBaseTemplates(IndexView)...)
+	return buildTemplates(s, "index.html", nil, view...)
 }
 
 // getProjectsTemplatePartial parses the projects template partial (incomplete html for htmx swapping)
 // and the joined base and projects view templates including the projects template partial.
-func (s *server) getProjectsTemplatePartial() map[string]*template.Template {
-	projects := "templates/partials/projects.html"
-	view := "templates/views/projects.html"
+// func (s *server) getProjectsTemplatePartial() map[string]*template.Template {
+// 	projects := "templates/partials/projects.html"
+// 	view := "templates/views/projects.html"
 
-	return map[string]*template.Template{
-		"projects": parseTemplate(s, "projects", nil, projects),
-		"full":     parseTemplate(s, "full", nil, getBaseTemplates(view, projects)...),
-	}
-}
+// 	return map[string]*template.Template{
+// 		"projects": buildTemplates(s, "projects", nil, projects),
+// 		"full":     buildTemplates(s, "full", nil, s.getBaseTemplates(view, projects)...),
+// 	}
+// }
 
-// parseTemplate is a fast way to parse a collection of templates in the server filesystem.
-func parseTemplate(s *server, name string, funcs template.FuncMap, templates ...string) *template.Template {
+// buildTemplates is a fast way to parse a collection of templates in the server filesystem.
+func buildTemplates(s *server, name string, funcs template.FuncMap, templates ...string) *template.Template {
 	// give the template a name
 	tmpl := template.New(name)
 

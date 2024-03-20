@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ .SiteData.Title }}</title>
+  <title>{{ .AppData.Title }}</title>
 
   <link rel="stylesheet" href="/static/css/reset.css" />
   <link rel="stylesheet" href="/static/css/styles.css" />
@@ -19,7 +19,7 @@
     content='{"historyCacheSize": 0, "refreshOnHistoryMiss": true}'
   />
 
-  {{- if .SiteData.DevModeEnabled -}}
+  {{- if .AppData.DevMode -}}
   <!-- Dev Mode Settings -->
   <meta http-equiv="cache-control" content="no-cache" />
   {{- end }}

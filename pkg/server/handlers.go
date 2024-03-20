@@ -2,27 +2,30 @@ package server
 
 import (
 	"net/http"
-	"text/template"
 )
+
+type AppData struct {
+	Title   string
+	DevMode bool
+}
 
 // Routes instatiates http Handlers and associated patterns on the server.
 func (s *server) Routes() {
-	s.Router.Handle("/static/", http.FileServer(http.FS(s.FileSystem)))
-
-	s.Router.HandleFunc("/", s.handleIndex(s.getIndexTemplate()))
-}
-
-func (s *server) GetSiteData() map[string]interface{} {
-	return map[string]interface{}{
-		"Title":          s.Title,
-		"DevModeEnabled": s.DevModeEnabled,
+	appData := AppData{
+		Title:   "Epic Title",
+		DevMode: false,
 	}
+
+	s.Router.Handle("/static/", http.FileServer(http.FS(s.FileSystem)))
+	s.Router.HandleFunc("/", s.handleIndex(appData))
 }
 
-func (s *server) handleIndex(tmpl *template.Template) http.HandlerFunc {
+func (s *server) handleIndex(appData AppData) http.HandlerFunc {
+	tmpl := IndexTemplate(s)
+
 	data := map[string]interface{}{
 		"PageTitle": "Index",
-		"SiteData":  s.GetSiteData(),
+		"AppData":   appData,
 		"Username":  "connorkuljis",
 	}
 
