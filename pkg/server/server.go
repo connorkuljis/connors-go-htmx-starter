@@ -53,6 +53,10 @@ const (
 	TemplatesDirName = "web/templates"
 )
 
+// NewServer returns a new pointer Server struct.
+//
+// Server encapsulates all dependencies for the web Server.
+// HTTP handlers access information via receiver types.
 func NewServer(fileSystem fs.FS, port string) *Server {
 	return &Server{
 		FileSystem:   fileSystem,
@@ -60,11 +64,14 @@ func NewServer(fileSystem fs.FS, port string) *Server {
 		Port:         port,
 		TemplatesDir: TemplatesDirName,
 		StaticDir:    StaticDirName,
-		Templates:    loadTemplates(TemplatesDirName),
+		Templates:    NewTemplates(TemplatesDirName),
 	}
 }
 
-func loadTemplates(dir string) Templates {
+// NewTemplates returns a new Templates struct
+//
+// Templates encapulates all definitions of html files to load from the Server.
+func NewTemplates(dir string) Templates {
 	return Templates{
 		BaseLayout: BaseLayout{
 			Root:   filepath.Join(dir, "root.html"),

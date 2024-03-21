@@ -26,7 +26,8 @@ func main() {
 	}
 }
 
-func port() {
-	port := os.Getenv("PORT")
-	devmode := os.Getenv("DEVMODE")
+// TODO: support environment variables for configuration
+func envvars() {
+	os.Getenv("PORT")    // PORT=8080
+	os.Getenv("DEVMODE") // DEVMODE=1
 }
