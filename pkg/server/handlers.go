@@ -20,7 +20,7 @@ func (s *Server) HandleIndex() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		buf, err := SafeTmplParse(tmpl, "root", data)
+		buf, err := SafeTmplExec(tmpl, "root", data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

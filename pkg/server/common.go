@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"text/template"
+
+	"github.com/yosssi/gohtml"
 )
 
 // buildTemplates is a fast way to parse a collection of templates in the server filesystem.
@@ -29,19 +31,22 @@ func BuildTemplates(s *Server, name string, funcs template.FuncMap, templates ..
 // safeTmplParse executes a given template to a bytes buffer. It returns the resulting buffer or nil, err if any error occurred.
 //
 // Templates are checked for missing keys to prevent partial data being written to the writer.
-func SafeTmplParse(tmpl *template.Template, name string, data any) (bytes.Buffer, error) {
+func SafeTmplExec(tmpl *template.Template, name string, data any) ([]byte, error) {
 	var buf bytes.Buffer
 	tmpl.Option("missingkey=error")
 	err := tmpl.ExecuteTemplate(&buf, name, data)
 	if err != nil {
 		log.Print(err)
-		return buf, err
+		return buf.Bytes(), err
 	}
-	return buf, nil
+	return gohtml.FormatBytes(buf.Bytes()), nil
 }
 
 // sendHTML writes a buffer a response writer as html
-func SendHTML(w http.ResponseWriter, buf bytes.Buffer) {
+func SendHTML(w http.ResponseWriter, buf []byte) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	buf.WriteTo(w)
+	_, err := w.Write(buf)
+	if err != nil {
+		log.Println(err)
+	}
 }
