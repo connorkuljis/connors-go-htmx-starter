@@ -49,8 +49,8 @@ type AppData struct {
 }
 
 const (
-	StaticDirName    = "web/static"
-	TemplatesDirName = "web/templates"
+	StaticDirName    = "www/static"
+	TemplatesDirName = "www/templates"
 )
 
 // NewServer returns a new pointer Server struct.
