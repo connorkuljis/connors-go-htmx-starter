@@ -4,6 +4,12 @@ import (
 	"net/http"
 )
 
+// Routes instatiates http Handlers and associated patterns on the server.
+func (s *Server) Routes() {
+	s.Router.Handle("/static/", http.FileServer(http.FS(s.FileSystem)))
+	s.Router.HandleFunc("/", s.HandleIndex())
+}
+
 func (s *Server) HandleIndex() http.HandlerFunc {
 	tmpl := IndexTemplate(s)
 

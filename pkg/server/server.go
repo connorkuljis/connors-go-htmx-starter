@@ -12,7 +12,7 @@ type Server struct {
 	FileSystem fs.FS // in-memory or disk
 	Router     *http.ServeMux
 	Templates  Templates
-	AppData    AppData
+	AppData    AppData // global app data
 
 	Port         string
 	StaticDir    string // location of static assets
@@ -62,12 +62,6 @@ func NewServer(fileSystem fs.FS, port string) *Server {
 		StaticDir:    StaticDirName,
 		Templates:    loadTemplates(TemplatesDirName),
 	}
-}
-
-// Routes instatiates http Handlers and associated patterns on the server.
-func (s *Server) Routes() {
-	s.Router.Handle("/static/", http.FileServer(http.FS(s.FileSystem)))
-	s.Router.HandleFunc("/", s.HandleIndex())
 }
 
 func loadTemplates(dir string) Templates {
