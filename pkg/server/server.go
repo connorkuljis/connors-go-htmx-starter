@@ -6,6 +6,18 @@ import (
 	"path/filepath"
 )
 
+// Server encapsulates all dependencies for the web Server.
+// HTTP handlers access information via receiver types.
+type Server struct {
+	FileSystem fs.FS // in-memory or disk
+	Router     *http.ServeMux
+	Templates  Templates
+
+	Port         string
+	StaticDir    string // location of static assets
+	TemplatesDir string // location of html templates, makes template parsing less verbose.
+}
+
 type Templates struct {
 	BaseLayout BaseLayout
 	Components Components
@@ -30,16 +42,9 @@ type Views struct {
 	Projects string
 }
 
-// Server encapsulates all dependencies for the web server.
-// HTTP handlers access information via receiver types.
-type server struct {
-	FileSystem fs.FS // in-memory or disk
-	Router     *http.ServeMux
-	Templates  Templates
-
-	Port         string
-	StaticDir    string // location of static assets
-	TemplatesDir string // location of html templates, makes template parsing less verbose.
+type AppData struct {
+	Title   string
+	DevMode bool
 }
 
 const (
@@ -47,8 +52,8 @@ const (
 	TemplatesDirName = "web/templates"
 )
 
-func NewServer(fileSystem fs.FS, port string) *server {
-	return &server{
+func NewServer(fileSystem fs.FS, port string) *Server {
+	return &Server{
 		FileSystem:   fileSystem,
 		Router:       http.NewServeMux(),
 		Port:         port,
@@ -56,6 +61,12 @@ func NewServer(fileSystem fs.FS, port string) *server {
 		StaticDir:    StaticDirName,
 		Templates:    loadTemplates(TemplatesDirName),
 	}
+}
+
+// Routes instatiates http Handlers and associated patterns on the server.
+func (s *Server) Routes() {
+	s.Router.Handle("/static/", http.FileServer(http.FS(s.FileSystem)))
+	s.Router.HandleFunc("/", s.HandleIndex())
 }
 
 func loadTemplates(dir string) Templates {
