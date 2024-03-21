@@ -12,11 +12,15 @@ import (
 var embedFS embed.FS
 
 func main() {
-	server := server.NewServer(embedFS, "8080")
-	server.Routes()
+	s := server.NewServer(embedFS, "8080")
+	s.AppData = server.AppData{
+		Title:   "Connors Go HTMX Starter",
+		DevMode: false, // load from env
+	}
+	s.Routes()
 
-	log.Println("[ 💿 Spinning up server on http://localhost:" + server.Port + " ]")
-	if err := http.ListenAndServe(":"+server.Port, server.Router); err != nil {
+	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")
+	if err := http.ListenAndServe(":"+s.Port, s.Router); err != nil {
 		log.Fatal("Error starting server", err)
 	}
 }

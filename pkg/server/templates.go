@@ -17,5 +17,5 @@ func IndexTemplate(s *Server) *template.Template {
 		s.Templates.Views.Index,
 	}
 
-	return buildTemplates(s, "index.html", nil, view...)
+	return BuildTemplates(s, "index.html", nil, view...)
 }

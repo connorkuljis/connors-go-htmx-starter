@@ -8,6 +8,7 @@ func (s *Server) HandleIndex() http.HandlerFunc {
 	tmpl := IndexTemplate(s)
 
 	data := map[string]interface{}{
+		"AppData":   s.AppData,
 		"PageTitle": "Index",
 		"Username":  "connorkuljis",
 	}

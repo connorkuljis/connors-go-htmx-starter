@@ -12,6 +12,7 @@ type Server struct {
 	FileSystem fs.FS // in-memory or disk
 	Router     *http.ServeMux
 	Templates  Templates
+	AppData    AppData
 
 	Port         string
 	StaticDir    string // location of static assets
