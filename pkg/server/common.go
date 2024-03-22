@@ -5,8 +5,6 @@ import (
 	"log"
 	"net/http"
 	"text/template"
-
-	"github.com/yosssi/gohtml"
 )
 
 // buildTemplates is a fast way to parse a collection of templates in the server filesystem.
@@ -39,7 +37,7 @@ func SafeTmplExec(tmpl *template.Template, name string, data any) ([]byte, error
 		log.Print(err)
 		return buf.Bytes(), err
 	}
-	return gohtml.FormatBytes(buf.Bytes()), nil
+	return buf.Bytes(), nil
 }
 
 // sendHTML writes a buffer a response writer as html
