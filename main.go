@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	srv "github.com/connorkuljis/connors-go-htmx-starter/pkg/server"
+	"github.com/connorkuljis/connors-go-htmx-starter/pkg/server"
 )
 
 //go:embed www/templates/* www/static/*
@@ -18,7 +18,8 @@ const (
 )
 
 func main() {
-	s := srv.NewServer(embedFS, "8080", StaticDirName, TemplatesDirName)
+	s := server.NewServer(embedFS, "8080", StaticDirName, TemplatesDirName)
+
 	s.Routes()
 
 	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")

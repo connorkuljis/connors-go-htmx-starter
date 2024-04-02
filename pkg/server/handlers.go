@@ -5,20 +5,13 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-
-	"github.com/connorkuljis/connors-go-htmx-starter/pkg/fragments"
 )
 
 func (s *Server) HandleIndex() http.HandlerFunc {
-	tmpl := s.BuildTemplates("index", nil, fragments.IndexTemplate()...)
-
-	data := map[string]interface{}{
-		"PageTitle": "Index",
-		"Username":  "connorkuljis",
-	}
+	tmpl := s.BuildTemplates("index", nil, s.IndexTemplate()...)
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		buf, err := SafeTmplExec(tmpl, "root", data)
+		buf, err := SafeTmplExec(tmpl, "root", nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
