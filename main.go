@@ -18,7 +18,10 @@ const (
 )
 
 func main() {
-	s := server.NewServer(embedFS, "8080", StaticDirName, TemplatesDirName)
+	s, err := server.NewServer(embedFS, "8080", StaticDirName, TemplatesDirName)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	s.Routes()
 
