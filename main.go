@@ -12,12 +12,13 @@ import (
 //go:embed www/templates/* www/static/*
 var embedFS embed.FS
 
+const (
+	StaticDirName    = "www/static"
+	TemplatesDirName = "www/templates"
+)
+
 func main() {
-	s := srv.NewServer(embedFS, "8080")
-	s.AppData = srv.AppData{
-		Title:   "Connors Go HTMX Starter",
-		DevMode: false, // load from env
-	}
+	s := srv.NewServer(embedFS, "8080", StaticDirName, TemplatesDirName)
 	s.Routes()
 
 	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")
