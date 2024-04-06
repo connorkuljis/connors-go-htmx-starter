@@ -16,5 +16,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	s.Routes()
+	if err := s.Routes(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = s.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }

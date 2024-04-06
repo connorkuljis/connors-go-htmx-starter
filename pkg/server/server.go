@@ -28,6 +28,7 @@ type Fragments struct {
 
 const (
 	TemplatesDir  = "www/templates"
+	StaticDir     = "www/static"
 	ComponentsDir = "components"
 	ViewsDir      = "views"
 )
@@ -53,14 +54,26 @@ func NewServer(fileSystem fs.FS, port string) (*Server, error) {
 }
 
 // Routes instatiates http Handlers and associated patterns on the server.
-func (s *Server) Routes() {
-	s.Router.Handle("/static/", http.FileServer(http.FS(s.FileSystem)))
+func (s *Server) Routes() error {
+	scfs, err := fs.Sub(s.FileSystem, StaticDir) // static content sub fs from the server's embedded fs
+	if err != nil {
+		return err
+	}
+
+	s.Router.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(scfs))))
 	s.Router.HandleFunc("/", s.HandleIndex())
 
+	return nil
+}
+
+func (s *Server) ListenAndServe() error {
 	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")
 	if err := http.ListenAndServe(":"+s.Port, s.Router); err != nil {
-		log.Fatal("Error starting server", err)
+		log.Println("Error starting server.")
+		return err
 	}
+
+	return nil
 }
 
 // InitFragments traverses the base, components and views directory in the given filesystem and returns a Fragments structure, or an error if an error occurs.
@@ -68,17 +81,21 @@ func InitFragments(filesystem fs.FS) (Fragments, error) {
 	var tmpls Fragments
 	var err error
 
-	tmpls.Base, err = mapNameToPath(filesystem, TemplatesDir)
+	templatesPath := TemplatesDir
+	componentsPath := filepath.Join(TemplatesDir, ComponentsDir)
+	viewsPath := filepath.Join(TemplatesDir, ViewsDir)
+
+	tmpls.Base, err = mapNameToPath(filesystem, templatesPath)
 	if err != nil {
 		return tmpls, err
 	}
 
-	tmpls.Components, err = mapNameToPath(filesystem, filepath.Join(TemplatesDir, ComponentsDir))
+	tmpls.Components, err = mapNameToPath(filesystem, componentsPath)
 	if err != nil {
 		return tmpls, err
 	}
 
-	tmpls.Views, err = mapNameToPath(filesystem, filepath.Join(TemplatesDir, ViewsDir))
+	tmpls.Views, err = mapNameToPath(filesystem, viewsPath)
 	if err != nil {
 		return tmpls, err
 	}
