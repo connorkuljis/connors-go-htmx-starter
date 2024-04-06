@@ -68,17 +68,17 @@ func InitFragments(filesystem fs.FS) (Fragments, error) {
 	var tmpls Fragments
 	var err error
 
-	tmpls.Base, err = loadfiles(filesystem, TemplatesDir)
+	tmpls.Base, err = mapNameToPath(filesystem, TemplatesDir)
 	if err != nil {
 		return tmpls, err
 	}
 
-	tmpls.Components, err = loadfiles(filesystem, filepath.Join(TemplatesDir, ComponentsDir))
+	tmpls.Components, err = mapNameToPath(filesystem, filepath.Join(TemplatesDir, ComponentsDir))
 	if err != nil {
 		return tmpls, err
 	}
 
-	tmpls.Views, err = loadfiles(filesystem, filepath.Join(TemplatesDir, ViewsDir))
+	tmpls.Views, err = mapNameToPath(filesystem, filepath.Join(TemplatesDir, ViewsDir))
 	if err != nil {
 		return tmpls, err
 	}
@@ -86,8 +86,8 @@ func InitFragments(filesystem fs.FS) (Fragments, error) {
 	return tmpls, nil
 }
 
-// loadfiles reads the filepath of all regular files into a map, keyed by the filename
-func loadfiles(filesystem fs.FS, path string) (map[string]string, error) {
+// mapNameToPath reads the filepath of all regular files into a map, keyed by the filename
+func mapNameToPath(filesystem fs.FS, path string) (map[string]string, error) {
 	mm := make(map[string]string)
 
 	files, err := fs.ReadDir(filesystem, path)
@@ -112,7 +112,7 @@ func loadfiles(filesystem fs.FS, path string) (map[string]string, error) {
 func (s *Server) BuildTemplates(name string, funcs template.FuncMap, templates ...string) *template.Template {
 	for _, template := range templates {
 		if template == "" {
-			log.Fatal(errors.New("Error building template, name: " + name))
+			log.Fatal(errors.New("Error building template for (" + name + "): an empty template was detected..."))
 		}
 	}
 	// give the template a name
