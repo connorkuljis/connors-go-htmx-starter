@@ -13,24 +13,24 @@ import (
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
 type Server struct {
-	FileSystem fs.FS
-	Router     *http.ServeMux
-	Fragments  Fragments
+	FileSystem        fs.FS
+	MuxRouter         *http.ServeMux
+	TemplateFragments TemplateFragments
 
 	Port string
 }
 
-type Fragments struct {
+type TemplateFragments struct {
 	Base       map[string]string
 	Components map[string]string
 	Views      map[string]string
 }
 
 const (
-	TemplatesDir  = "www/templates"
-	StaticDir     = "www/static"
-	ComponentsDir = "components"
-	ViewsDir      = "views"
+	TemplatesDirStr  = "www/templates"
+	StaticDirStr     = "www/static"
+	ComponentsDirStr = "components"
+	ViewsDirStr      = "views"
 )
 
 // NewServer returns a new pointer Server struct.
@@ -38,16 +38,16 @@ const (
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
 func NewServer(fileSystem fs.FS, port string) (*Server, error) {
-	fragments, err := InitFragments(fileSystem)
+	templateFragments, err := ExtractTemplateFragmentsFromFilesystem(fileSystem)
 	if err != nil {
 		return nil, err
 	}
 
 	s := &Server{
-		FileSystem: fileSystem,
-		Router:     http.NewServeMux(),
-		Port:       port,
-		Fragments:  fragments,
+		FileSystem:        fileSystem,
+		MuxRouter:         http.NewServeMux(),
+		Port:              port,
+		TemplateFragments: templateFragments,
 	}
 
 	return s, nil
@@ -55,20 +55,20 @@ func NewServer(fileSystem fs.FS, port string) (*Server, error) {
 
 // Routes instatiates http Handlers and associated patterns on the server.
 func (s *Server) Routes() error {
-	scfs, err := fs.Sub(s.FileSystem, StaticDir) // static content sub fs from the server's embedded fs
+	scfs, err := fs.Sub(s.FileSystem, StaticDirStr) // static content sub fs from the server's embedded fs
 	if err != nil {
 		return err
 	}
 
-	s.Router.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(scfs))))
-	s.Router.HandleFunc("/", s.HandleIndex())
+	s.MuxRouter.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(scfs))))
+	s.MuxRouter.HandleFunc("/", s.HandleIndex())
 
 	return nil
 }
 
 func (s *Server) ListenAndServe() error {
 	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")
-	if err := http.ListenAndServe(":"+s.Port, s.Router); err != nil {
+	if err := http.ListenAndServe(":"+s.Port, s.MuxRouter); err != nil {
 		log.Println("Error starting server.")
 		return err
 	}
@@ -76,51 +76,53 @@ func (s *Server) ListenAndServe() error {
 	return nil
 }
 
-// InitFragments traverses the base, components and views directory in the given filesystem and returns a Fragments structure, or an error if an error occurs.
-func InitFragments(filesystem fs.FS) (Fragments, error) {
-	var tmpls Fragments
+// ExtractTemplateFragmentsFromFilesystem traverses the base, components and views directory in the given filesystem and returns a Fragments structure, or an error if an error occurs.
+func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS) (TemplateFragments, error) {
+	var templateFragments TemplateFragments
 	var err error
 
-	templatesPath := TemplatesDir
-	componentsPath := filepath.Join(TemplatesDir, ComponentsDir)
-	viewsPath := filepath.Join(TemplatesDir, ViewsDir)
-
-	tmpls.Base, err = mapNameToPath(filesystem, templatesPath)
+	// load root templates
+	templatesPath := TemplatesDirStr
+	templateFragments.Base, err = buildFilePathMap(filesystem, templatesPath)
 	if err != nil {
-		return tmpls, err
+		return templateFragments, err
 	}
 
-	tmpls.Components, err = mapNameToPath(filesystem, componentsPath)
+	// load components templates
+	componentsPath := filepath.Join(TemplatesDirStr, ComponentsDirStr)
+	templateFragments.Components, err = buildFilePathMap(filesystem, componentsPath)
 	if err != nil {
-		return tmpls, err
+		return templateFragments, err
 	}
 
-	tmpls.Views, err = mapNameToPath(filesystem, viewsPath)
+	// load views templates
+	viewsPath := filepath.Join(TemplatesDirStr, ViewsDirStr)
+	templateFragments.Views, err = buildFilePathMap(filesystem, viewsPath)
 	if err != nil {
-		return tmpls, err
+		return templateFragments, err
 	}
 
-	return tmpls, nil
+	return templateFragments, nil
 }
 
-// mapNameToPath reads the filepath of all regular files into a map, keyed by the filename
-func mapNameToPath(filesystem fs.FS, path string) (map[string]string, error) {
-	mm := make(map[string]string)
+// buildFilePathMap reads the filepath of all regular files into a map, keyed by the filename
+func buildFilePathMap(filesystem fs.FS, path string) (map[string]string, error) {
+	filePathMap := make(map[string]string)
 
 	files, err := fs.ReadDir(filesystem, path)
 	if err != nil {
-		return mm, err
+		return filePathMap, err
 	}
 
 	for _, file := range files {
 		if !file.IsDir() {
 			name := file.Name()               // "index.html"
 			path := filepath.Join(path, name) // "www/static/templates/views/index/html"
-			mm[name] = path                   // "index.html" => "www/static/templates/views/index/html"
+			filePathMap[name] = path          // "index.html" => "www/static/templates/views/index/html"
 		}
 	}
 
-	return mm, nil
+	return filePathMap, nil
 }
 
 // buildTemplates is a fast way to parse a collection of templates in the server filesystem.
@@ -153,20 +155,20 @@ func (s *Server) BuildTemplates(name string, funcs template.FuncMap, templates .
 //
 // Templates are checked for missing keys to prevent partial data being written to the writer.
 func SafeTmplExec(tmpl *template.Template, name string, data any) ([]byte, error) {
-	var buf bytes.Buffer
+	var bufBytes bytes.Buffer
 	tmpl.Option("missingkey=error")
-	err := tmpl.ExecuteTemplate(&buf, name, data)
+	err := tmpl.ExecuteTemplate(&bufBytes, name, data)
 	if err != nil {
 		log.Print(err)
-		return buf.Bytes(), err
+		return bufBytes.Bytes(), err
 	}
-	return buf.Bytes(), nil
+	return bufBytes.Bytes(), nil
 }
 
 // sendHTML writes a buffer a response writer as html
-func SendHTML(w http.ResponseWriter, buf []byte) {
+func SendHTML(w http.ResponseWriter, bufBytes []byte) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-	_, err := w.Write(buf)
+	_, err := w.Write(bufBytes)
 	if err != nil {
 		log.Println(err)
 	}
