@@ -6,15 +6,15 @@ import (
 
 func (s *Server) HandleIndex() http.HandlerFunc {
 	fragments := []string{
-		s.Fragments.Base["root.html"],
-		s.Fragments.Base["layout.html"],
-		s.Fragments.Base["head.html"],
+		s.TemplateFragments.Base["root.html"],
+		s.TemplateFragments.Base["layout.html"],
+		s.TemplateFragments.Base["head.html"],
 
-		s.Fragments.Components["footer.html"],
-		s.Fragments.Components["nav.html"],
-		s.Fragments.Components["header.html"],
+		s.TemplateFragments.Components["footer.html"],
+		s.TemplateFragments.Components["nav.html"],
+		s.TemplateFragments.Components["header.html"],
 
-		s.Fragments.Views["index.html"],
+		s.TemplateFragments.Views["index.html"],
 	}
 
 	tmpl := s.BuildTemplates("index", nil, fragments...)
