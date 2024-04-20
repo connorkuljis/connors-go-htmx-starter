@@ -53,19 +53,6 @@ func NewServer(fileSystem fs.FS, port string) (*Server, error) {
 	return s, nil
 }
 
-// Routes instatiates http Handlers and associated patterns on the server.
-func (s *Server) Routes() error {
-	scfs, err := fs.Sub(s.FileSystem, StaticDirStr) // static content sub fs from the server's embedded fs
-	if err != nil {
-		return err
-	}
-
-	s.MuxRouter.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(scfs))))
-	s.MuxRouter.HandleFunc("/", s.HandleIndex())
-
-	return nil
-}
-
 func (s *Server) ListenAndServe() error {
 	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")
 	if err := http.ListenAndServe(":"+s.Port, s.MuxRouter); err != nil {
