@@ -1,7 +1,9 @@
 {{ define "view" }}
 <p>Hello, World!</p>
 
-{{ template "counter" . }} {{ end }}
+<div id="counter">{{ template "counter" . }}</div>
+
+{{ end }}
 
 <!-- ex: golang html template partial -->
 {{ define "counter" }}
