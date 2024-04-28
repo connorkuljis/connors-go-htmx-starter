@@ -2,139 +2,134 @@ package server
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 )
+
+const Base = "base"
 
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
 type Server struct {
-	FileSystem        fs.FS
-	MuxRouter         *http.ServeMux
-	TemplateFragments TemplateFragments
+	FileSystem           fs.FS
+	StaticContentHandler http.Handler
+	MuxRouter            *http.ServeMux
+	TemplateFragments    TemplateFragments
 
 	Port string
 }
 
-type TemplateFragments struct {
-	Base       map[string]string
-	Components map[string]string
-	Views      map[string]string
-}
-
-const (
-	TemplatesDirStr  = "www/templates"
-	StaticDirStr     = "www/static"
-	ComponentsDirStr = "components"
-	ViewsDirStr      = "views"
-)
+type TemplateFragments map[string]map[string]string
 
 // NewServer returns a new pointer Server struct.
 //
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
-func NewServer(fileSystem fs.FS, port string) (*Server, error) {
-	templateFragments, err := ExtractTemplateFragmentsFromFilesystem(fileSystem)
+func NewServer(fileSystem fs.FS, port, templatesPath, staticPath string) (*Server, error) {
+	templateFragments, err := ExtractTemplateFragmentsFromFilesystem(fileSystem, templatesPath)
 	if err != nil {
 		return nil, err
 	}
-
-	s := &Server{
-		FileSystem:        fileSystem,
-		MuxRouter:         http.NewServeMux(),
-		Port:              port,
-		TemplateFragments: templateFragments,
+	scfs, err := fs.Sub(fileSystem, staticPath)
+	if err != nil {
+		return nil, err
 	}
-
+	s := &Server{
+		FileSystem:           fileSystem,
+		MuxRouter:            http.NewServeMux(),
+		Port:                 port,
+		StaticContentHandler: http.FileServer(http.FS(scfs)),
+		TemplateFragments:    templateFragments,
+	}
 	return s, nil
 }
 
 func (s *Server) ListenAndServe() error {
 	log.Println("[ 💿 Spinning up server on http://localhost:" + s.Port + " ]")
 	if err := http.ListenAndServe(":"+s.Port, s.MuxRouter); err != nil {
-		log.Println("Error starting server.")
-		return err
+		return fmt.Errorf("Error starting server: %w", err)
 	}
-
 	return nil
 }
 
 // ExtractTemplateFragmentsFromFilesystem traverses the base, components and views directory in the given filesystem and returns a Fragments structure, or an error if an error occurs.
-func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS) (TemplateFragments, error) {
-	var templateFragments TemplateFragments
+func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS, templatesPath string) (TemplateFragments, error) {
 	var err error
-
-	// load root templates
-	templatesPath := TemplatesDirStr
-	templateFragments.Base, err = buildFilePathMap(filesystem, templatesPath)
+	templateFragments := make(TemplateFragments, 0)
+	regularFiles, err := readRegularFiles(filesystem, templatesPath)
 	if err != nil {
 		return templateFragments, err
 	}
-
-	// load components templates
-	componentsPath := filepath.Join(TemplatesDirStr, ComponentsDirStr)
-	templateFragments.Components, err = buildFilePathMap(filesystem, componentsPath)
+	templateFragments[Base] = regularFiles
+	topLevelDirs, err := readTopLevelDirs(filesystem, templatesPath)
 	if err != nil {
 		return templateFragments, err
 	}
-
-	// load views templates
-	viewsPath := filepath.Join(TemplatesDirStr, ViewsDirStr)
-	templateFragments.Views, err = buildFilePathMap(filesystem, viewsPath)
-	if err != nil {
-		return templateFragments, err
+	for _, dir := range topLevelDirs {
+		k := dir.Name()
+		targetPath := filepath.Join(templatesPath, k)
+		v, err := readRegularFiles(filesystem, targetPath)
+		if err != nil {
+			return templateFragments, err
+		}
+		templateFragments[k] = v
 	}
-
 	return templateFragments, nil
 }
 
-// buildFilePathMap reads the filepath of all regular files into a map, keyed by the filename
-func buildFilePathMap(filesystem fs.FS, path string) (map[string]string, error) {
-	filePathMap := make(map[string]string)
-
-	files, err := fs.ReadDir(filesystem, path)
+func readTopLevelDirs(filesystem fs.FS, targetPath string) ([]os.DirEntry, error) {
+	var topLevelDirs []os.DirEntry
+	dirs, err := fs.ReadDir(filesystem, targetPath)
 	if err != nil {
-		return filePathMap, err
+		return topLevelDirs, err
 	}
-
-	for _, file := range files {
-		if !file.IsDir() {
-			name := file.Name()               // "index.html"
-			path := filepath.Join(path, name) // "www/static/templates/views/index/html"
-			filePathMap[name] = path          // "index.html" => "www/static/templates/views/index/html"
+	for _, dir := range dirs {
+		if dir.IsDir() {
+			topLevelDirs = append(topLevelDirs, dir)
 		}
 	}
+	return topLevelDirs, nil
+}
 
-	return filePathMap, nil
+// readRegularFiles takes a filesystem and a targetPath and returns a map[string]string, or an error if an error occurs.
+//
+// First a new empty map is created, then we iterate over each dir. If the dir
+// is a regular file, we assign a new entry into the map where the filename is the
+// key and the joined filepath string is the value
+func readRegularFiles(filesystem fs.FS, targetPath string) (map[string]string, error) {
+	newMap := make(map[string]string)
+	dirs, err := fs.ReadDir(filesystem, targetPath)
+	if err != nil {
+		return newMap, err
+	}
+	for _, dir := range dirs {
+		if dir.Type().IsRegular() {
+			k := dir.Name()
+			v := filepath.Join(targetPath, k)
+			newMap[k] = v
+		}
+	}
+	return newMap, nil
 }
 
 // buildTemplates is a fast way to parse a collection of templates in the server filesystem.
 //
 // template files are provided as strings to be parsed from the filesystem
 func (s *Server) BuildTemplates(name string, funcs template.FuncMap, templates ...string) *template.Template {
-	for _, template := range templates {
-		if template == "" {
-			log.Fatal(errors.New("Error building template for (" + name + "): an empty template was detected..."))
-		}
-	}
-	// give the template a name
 	tmpl := template.New(name)
-
-	// custom template functions if exists
 	if funcs != nil {
 		tmpl.Funcs(funcs)
 	}
-
-	// generate a template from the files in the server fs (usually embedded)
 	tmpl, err := tmpl.ParseFS(s.FileSystem, templates...)
 	if err != nil {
+		err = fmt.Errorf("Error building template name='%s': %w", name, err)
 		log.Fatal(err)
 	}
-
 	return tmpl
 }
 

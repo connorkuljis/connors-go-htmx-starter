@@ -1,18 +1,12 @@
 package server
 
 import (
-	"io/fs"
 	"net/http"
 )
 
 // Routes instatiates http Handlers and associated patterns on the server.
 func (s *Server) Routes() error {
-	scfs, err := fs.Sub(s.FileSystem, StaticDirStr)
-	if err != nil {
-		return err
-	}
-
-	s.MuxRouter.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(scfs))))
+	s.MuxRouter.Handle("/static/", http.StripPrefix("/static/", s.StaticContentHandler))
 	s.MuxRouter.HandleFunc("/", s.HandleIndex())
 
 	return nil
@@ -20,13 +14,13 @@ func (s *Server) Routes() error {
 
 func (s *Server) HandleIndex() http.HandlerFunc {
 	indexTemplateFragments := []string{
-		s.TemplateFragments.Base["root.html"],
-		s.TemplateFragments.Base["layout.html"],
-		s.TemplateFragments.Base["head.html"],
-		s.TemplateFragments.Components["footer.html"],
-		s.TemplateFragments.Components["nav.html"],
-		s.TemplateFragments.Components["header.html"],
-		s.TemplateFragments.Views["index.html"],
+		s.TemplateFragments[Base]["root.html"],
+		s.TemplateFragments[Base]["layout.html"],
+		s.TemplateFragments[Base]["head.html"],
+		s.TemplateFragments["components"]["footer.html"],
+		s.TemplateFragments["components"]["nav.html"],
+		s.TemplateFragments["components"]["header.html"],
+		s.TemplateFragments["views"]["index.html"],
 	}
 
 	indexTemplate := s.BuildTemplates("index", nil, indexTemplateFragments...)
