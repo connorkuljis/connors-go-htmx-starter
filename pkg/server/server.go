@@ -57,13 +57,12 @@ func (s *Server) ListenAndServe() error {
 	return nil
 }
 
-// ExtractTemplateFragmentsFromFilesystem traverses the base, components and views directory in the given filesystem and returns a Fragments structure, or an error if an error occurs.
 func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS, templatesPath string) (TemplateFragments, error) {
 	var err error
 	var k string
 	var v map[string]string
 
-	templateFragments := make(TemplateFragments, 0)
+	templateFragments := make(TemplateFragments)
 
 	k = Base // default key to access base files
 	v, err = regularFilesToMap(filesystem, templatesPath)
@@ -78,8 +77,7 @@ func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS, templatesPath stri
 	}
 	for _, dir := range topLevelDirs {
 		k := dir.Name()
-		targetPath := filepath.Join(templatesPath, k)
-		v, err := regularFilesToMap(filesystem, targetPath)
+		v, err := regularFilesToMap(filesystem, filepath.Join(templatesPath, k))
 		if err != nil {
 			return templateFragments, err
 		}
