@@ -60,12 +60,18 @@ func (s *Server) ListenAndServe() error {
 // ExtractTemplateFragmentsFromFilesystem traverses the base, components and views directory in the given filesystem and returns a Fragments structure, or an error if an error occurs.
 func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS, templatesPath string) (TemplateFragments, error) {
 	var err error
+	var k string
+	var v map[string]string
+
 	templateFragments := make(TemplateFragments, 0)
-	regularFiles, err := readRegularFiles(filesystem, templatesPath)
+
+	k = Base // default key to access base files
+	v, err = regularFilesToMap(filesystem, templatesPath)
 	if err != nil {
 		return templateFragments, err
 	}
-	templateFragments[Base] = regularFiles
+	templateFragments[k] = v
+
 	topLevelDirs, err := readTopLevelDirs(filesystem, templatesPath)
 	if err != nil {
 		return templateFragments, err
@@ -73,7 +79,7 @@ func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS, templatesPath stri
 	for _, dir := range topLevelDirs {
 		k := dir.Name()
 		targetPath := filepath.Join(templatesPath, k)
-		v, err := readRegularFiles(filesystem, targetPath)
+		v, err := regularFilesToMap(filesystem, targetPath)
 		if err != nil {
 			return templateFragments, err
 		}
@@ -96,12 +102,12 @@ func readTopLevelDirs(filesystem fs.FS, targetPath string) ([]os.DirEntry, error
 	return topLevelDirs, nil
 }
 
-// readRegularFiles takes a filesystem and a targetPath and returns a map[string]string, or an error if an error occurs.
+// regularFilesToMap takes a filesystem and a targetPath and returns a map[string]string, or an error if an error occurs.
 //
 // First a new empty map is created, then we iterate over each dir. If the dir
 // is a regular file, we assign a new entry into the map where the filename is the
 // key and the joined filepath string is the value
-func readRegularFiles(filesystem fs.FS, targetPath string) (map[string]string, error) {
+func regularFilesToMap(filesystem fs.FS, targetPath string) (map[string]string, error) {
 	newMap := make(map[string]string)
 	dirs, err := fs.ReadDir(filesystem, targetPath)
 	if err != nil {

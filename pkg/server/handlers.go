@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 )
 
 // Routes instatiates http Handlers and associated patterns on the server.
@@ -26,7 +27,8 @@ func (s *Server) HandleIndex() http.HandlerFunc {
 	indexTemplate := s.BuildTemplates("index", nil, indexTemplateFragments...)
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		htmlBytes, err := SafeTmplExec(indexTemplate, "root", nil)
+		parcel := map[string]any{"Time": time.Now()}
+		htmlBytes, err := SafeTmplExec(indexTemplate, "root", parcel)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
