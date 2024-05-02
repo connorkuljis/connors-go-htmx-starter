@@ -7,11 +7,8 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 )
-
-const Base = "base"
 
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
@@ -19,19 +16,17 @@ type Server struct {
 	FileSystem           fs.FS
 	StaticContentHandler http.Handler
 	MuxRouter            *http.ServeMux
-	TemplateFragments    TemplateFragments
+	TemplateMap          map[string]string
 
 	Port string
 }
-
-type TemplateFragments map[string]map[string]string
 
 // NewServer returns a new pointer Server struct.
 //
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
 func NewServer(fileSystem fs.FS, port, templatesPath, staticPath string) (*Server, error) {
-	templateFragments, err := ExtractTemplateFragmentsFromFilesystem(fileSystem, templatesPath)
+	templateMap, err := BuildTemplateMap(fileSystem, templatesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -44,9 +39,51 @@ func NewServer(fileSystem fs.FS, port, templatesPath, staticPath string) (*Serve
 		MuxRouter:            http.NewServeMux(),
 		Port:                 port,
 		StaticContentHandler: http.FileServer(http.FS(scfs)),
-		TemplateFragments:    templateFragments,
+		TemplateMap:          templateMap,
 	}
 	return s, nil
+}
+
+func BuildTemplateMap(filesystem fs.FS, templatesPath string) (map[string]string, error) {
+	templates := make(map[string]string)
+
+	err := fs.WalkDir(filesystem, templatesPath, func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() && filepath.Ext(d.Name()) == ".html" {
+			templates[d.Name()] = path
+		}
+		return nil
+	})
+	if err != nil {
+		return templates, err
+	}
+
+	return templates, nil
+}
+
+// buildTemplates is a fast way to parse a collection of templates in the server filesystem.
+//
+// template files are provided as strings to be parsed from the filesystem
+func (s *Server) ParseTemplates(name string, funcs template.FuncMap, templateKeys ...string) *template.Template {
+	tmpl := template.New(name)
+	if funcs != nil {
+		tmpl.Funcs(funcs)
+	}
+
+	var templatePaths []string
+	for _, key := range templateKeys {
+		path, ok := s.TemplateMap[key]
+		if !ok {
+			log.Fatalf("Error parsing template [%s], key does not exist [%s]", name, key)
+		}
+		templatePaths = append(templatePaths, path)
+	}
+
+	tmpl, err := tmpl.ParseFS(s.FileSystem, templatePaths...)
+	if err != nil {
+		err = fmt.Errorf("Error building template name='%s': %w", name, err)
+		log.Fatal(err)
+	}
+	return tmpl
 }
 
 func (s *Server) ListenAndServe() error {
@@ -57,85 +94,10 @@ func (s *Server) ListenAndServe() error {
 	return nil
 }
 
-func ExtractTemplateFragmentsFromFilesystem(filesystem fs.FS, templatesPath string) (TemplateFragments, error) {
-	var err error
-	var k string
-	var v map[string]string
-
-	templateFragments := make(TemplateFragments)
-
-	k = Base // default key to access base files
-	v, err = regularFilesToMap(filesystem, templatesPath)
-	if err != nil {
-		return templateFragments, err
-	}
-	templateFragments[k] = v
-
-	topLevelDirs, err := readTopLevelDirs(filesystem, templatesPath)
-	if err != nil {
-		return templateFragments, err
-	}
-	for _, dir := range topLevelDirs {
-		k := dir.Name()
-		v, err := regularFilesToMap(filesystem, filepath.Join(templatesPath, k))
-		if err != nil {
-			return templateFragments, err
-		}
-		templateFragments[k] = v
-	}
-	return templateFragments, nil
-}
-
-func readTopLevelDirs(filesystem fs.FS, targetPath string) ([]os.DirEntry, error) {
-	var topLevelDirs []os.DirEntry
-	dirs, err := fs.ReadDir(filesystem, targetPath)
-	if err != nil {
-		return topLevelDirs, err
-	}
-	for _, dir := range dirs {
-		if dir.IsDir() {
-			topLevelDirs = append(topLevelDirs, dir)
-		}
-	}
-	return topLevelDirs, nil
-}
-
-// regularFilesToMap takes a filesystem and a targetPath and returns a map[string]string, or an error if an error occurs.
 //
-// First a new empty map is created, then we iterate over each dir. If the dir
-// is a regular file, we assign a new entry into the map where the filename is the
-// key and the joined filepath string is the value
-func regularFilesToMap(filesystem fs.FS, targetPath string) (map[string]string, error) {
-	newMap := make(map[string]string)
-	dirs, err := fs.ReadDir(filesystem, targetPath)
-	if err != nil {
-		return newMap, err
-	}
-	for _, dir := range dirs {
-		if dir.Type().IsRegular() {
-			k := dir.Name()
-			v := filepath.Join(targetPath, k)
-			newMap[k] = v
-		}
-	}
-	return newMap, nil
-}
-
-// buildTemplates is a fast way to parse a collection of templates in the server filesystem.
+// Utils
 //
-// template files are provided as strings to be parsed from the filesystem
-func (s *Server) BuildTemplates(name string, funcs template.FuncMap, templates ...string) *template.Template {
-	tmpl := template.New(name)
-	if funcs != nil {
-		tmpl.Funcs(funcs)
-	}
-	tmpl, err := tmpl.ParseFS(s.FileSystem, templates...)
-	if err != nil {
-		err = fmt.Errorf("Error building template name='%s': %w", name, err)
-		log.Fatal(err)
-	}
-	return tmpl
-}
+//
 
 // safeTmplParse executes a given template to a bytes buffer. It returns the resulting buffer or nil, err if any error occurred.
 //

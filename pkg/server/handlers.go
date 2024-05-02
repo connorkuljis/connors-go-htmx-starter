@@ -14,17 +14,17 @@ func (s *Server) Routes() error {
 }
 
 func (s *Server) HandleIndex() http.HandlerFunc {
-	indexTemplateFragments := []string{
-		s.TemplateFragments[Base]["root.html"],
-		s.TemplateFragments[Base]["layout.html"],
-		s.TemplateFragments[Base]["head.html"],
-		s.TemplateFragments["components"]["footer.html"],
-		s.TemplateFragments["components"]["nav.html"],
-		s.TemplateFragments["components"]["header.html"],
-		s.TemplateFragments["views"]["index.html"],
+	indexPage := []string{
+		"root.html",
+		"head.html",
+		"layout.html",
+		"nav.html",
+		"header.html",
+		"footer.html",
+		"index.html",
 	}
 
-	indexTemplate := s.BuildTemplates("index", nil, indexTemplateFragments...)
+	indexTemplate := s.ParseTemplates("index.html", nil, indexPage...)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		parcel := map[string]any{"Time": time.Now()}
