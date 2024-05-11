@@ -3,6 +3,8 @@ package main
 import (
 	"embed"
 	"log"
+	"log/slog"
+	"os"
 
 	"github.com/connorkuljis/connors-go-htmx-starter/pkg/server"
 )
@@ -17,7 +19,9 @@ const (
 var embedFS embed.FS
 
 func main() {
-	s, err := server.NewServer(embedFS, Port, TemplatesDir, StaticDir)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	s, err := server.NewServer(embedFS, logger, Port, TemplatesDir, StaticDir)
 	if err != nil {
 		log.Fatal(err)
 	}

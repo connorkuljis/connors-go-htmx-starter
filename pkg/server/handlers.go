@@ -3,12 +3,14 @@ package server
 import (
 	"net/http"
 	"time"
+
+	"github.com/connorkuljis/connors-go-htmx-starter/pkg/middleware"
 )
 
 // Routes instatiates http Handlers and associated patterns on the server.
 func (s *Server) Routes() error {
 	s.MuxRouter.Handle("/static/", http.StripPrefix("/static/", s.StaticContentHandler))
-	s.MuxRouter.HandleFunc("/", s.HandleIndex())
+	s.MuxRouter.HandleFunc("/", middleware.Logging(s.Logger, s.HandleIndex()))
 
 	return nil
 }

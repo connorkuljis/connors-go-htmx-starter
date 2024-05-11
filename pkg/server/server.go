@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/fs"
 	"log"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 )
@@ -16,6 +17,7 @@ type Server struct {
 	FileSystem           fs.FS
 	StaticContentHandler http.Handler
 	MuxRouter            *http.ServeMux
+	Logger               *slog.Logger
 	TemplateMap          map[string]string
 
 	Port string
@@ -25,7 +27,7 @@ type Server struct {
 //
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
-func NewServer(fileSystem fs.FS, port, templatesPath, staticPath string) (*Server, error) {
+func NewServer(fileSystem fs.FS, logger *slog.Logger, port, templatesPath, staticPath string) (*Server, error) {
 	templateMap, err := BuildTemplateMap(fileSystem, templatesPath)
 	if err != nil {
 		return nil, err
@@ -37,6 +39,7 @@ func NewServer(fileSystem fs.FS, port, templatesPath, staticPath string) (*Serve
 	s := &Server{
 		FileSystem:           fileSystem,
 		MuxRouter:            http.NewServeMux(),
+		Logger:               logger,
 		Port:                 port,
 		StaticContentHandler: http.FileServer(http.FS(scfs)),
 		TemplateMap:          templateMap,
