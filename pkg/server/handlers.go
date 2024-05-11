@@ -8,29 +8,27 @@ import (
 )
 
 // Routes instatiates http Handlers and associated patterns on the server.
-func (s *Server) Routes() error {
+func (s *Server) Routes() {
 	s.MuxRouter.Handle("/static/", http.StripPrefix("/static/", s.StaticContentHandler))
 	s.MuxRouter.HandleFunc("/", middleware.Logging(s.Logger, s.HandleIndex()))
-
-	return nil
 }
 
 func (s *Server) HandleIndex() http.HandlerFunc {
-	indexPage := []string{
-		"root.html",
-		"head.html",
-		"layout.html",
-		"nav.html",
-		"header.html",
-		"footer.html",
-		"index.html",
+	index := []string{
+		s.TemplateStore.Base["root.html"],
+		s.TemplateStore.Base["head.html"],
+		s.TemplateStore.Base["layout.html"],
+		s.TemplateStore.Components["nav.html"],
+		s.TemplateStore.Components["header.html"],
+		s.TemplateStore.Components["footer.html"],
+		s.TemplateStore.Views["index.html"],
 	}
 
-	indexTemplate := s.ParseTemplates("index.html", nil, indexPage...)
+	t := s.ParseTemplates("index.html", nil, index...)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		parcel := map[string]any{"Time": time.Now()}
-		htmlBytes, err := SafeTmplExec(indexTemplate, "root", parcel)
+		htmlBytes, err := SafeTmplExec(t, "root", parcel)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

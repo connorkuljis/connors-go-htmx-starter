@@ -11,6 +11,12 @@ import (
 	"path/filepath"
 )
 
+type TemplateStore struct {
+	Base       map[string]string
+	Components map[string]string
+	Views      map[string]string
+}
+
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
 type Server struct {
@@ -18,7 +24,7 @@ type Server struct {
 	StaticContentHandler http.Handler
 	MuxRouter            *http.ServeMux
 	Logger               *slog.Logger
-	TemplateMap          map[string]string
+	TemplateStore        TemplateStore
 
 	Port string
 }
@@ -28,7 +34,7 @@ type Server struct {
 // Server encapsulates all dependencies for the web Server.
 // HTTP handlers access information via receiver types.
 func NewServer(fileSystem fs.FS, logger *slog.Logger, port, templatesPath, staticPath string) (*Server, error) {
-	templateMap, err := BuildTemplateMap(fileSystem, templatesPath)
+	templateStore, err := BuildTemplateStore(fileSystem, templatesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -42,49 +48,62 @@ func NewServer(fileSystem fs.FS, logger *slog.Logger, port, templatesPath, stati
 		Logger:               logger,
 		Port:                 port,
 		StaticContentHandler: http.FileServer(http.FS(scfs)),
-		TemplateMap:          templateMap,
+		TemplateStore:        templateStore,
 	}
 	return s, nil
 }
 
-func BuildTemplateMap(filesystem fs.FS, templatesPath string) (map[string]string, error) {
-	templates := make(map[string]string)
+func BuildTemplateStore(filesystem fs.FS, templatesPath string) (TemplateStore, error) {
+	var templateStore TemplateStore
+	componentsPath := filepath.Join(templatesPath, "components")
+	viewsPath := filepath.Join(templatesPath, "views")
 
-	err := fs.WalkDir(filesystem, templatesPath, func(path string, d fs.DirEntry, err error) error {
-		if !d.IsDir() && filepath.Ext(d.Name()) == ".html" {
-			templates[d.Name()] = path
-		}
-		return nil
-	})
+	base, err := fs.ReadDir(filesystem, templatesPath)
 	if err != nil {
-		return templates, err
+		return templateStore, err
+	}
+	components, err := fs.ReadDir(filesystem, componentsPath)
+	if err != nil {
+		return templateStore, err
+	}
+	views, err := fs.ReadDir(filesystem, viewsPath)
+	if err != nil {
+		return templateStore, err
 	}
 
-	return templates, nil
+	templateStore.Base = buildMap(base, templatesPath)
+	templateStore.Components = buildMap(components, componentsPath)
+	templateStore.Views = buildMap(views, viewsPath)
+
+	return templateStore, nil
+}
+
+func buildMap(files []fs.DirEntry, path string) map[string]string {
+	newMap := map[string]string{}
+
+	for _, file := range files {
+		filename := file.Name()
+		if file.Type().IsRegular() {
+			newMap[filename] = filepath.Join(path, filename)
+		}
+	}
+
+	return newMap
 }
 
 // buildTemplates is a fast way to parse a collection of templates in the server filesystem.
 //
 // template files are provided as strings to be parsed from the filesystem
-func (s *Server) ParseTemplates(name string, funcs template.FuncMap, templateKeys ...string) *template.Template {
+func (s *Server) ParseTemplates(name string, funcs template.FuncMap, templatefiles ...string) *template.Template {
 	tmpl := template.New(name)
 	if funcs != nil {
 		tmpl.Funcs(funcs)
 	}
 
-	var templatePaths []string
-	for _, key := range templateKeys {
-		path, ok := s.TemplateMap[key]
-		if !ok {
-			log.Fatalf("Error parsing template [%s], key does not exist [%s]", name, key)
-		}
-		templatePaths = append(templatePaths, path)
-	}
-
-	tmpl, err := tmpl.ParseFS(s.FileSystem, templatePaths...)
+	tmpl, err := tmpl.ParseFS(s.FileSystem, templatefiles...)
 	if err != nil {
 		err = fmt.Errorf("Error building template name='%s': %w", name, err)
-		log.Fatal(err)
+		s.Logger.Error(err.Error())
 	}
 	return tmpl
 }
