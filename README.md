@@ -2,7 +2,7 @@
 
 An opinionated example repo for building hypermedia applications with Golang.
 
-This is provided for you to 
+It is a starting point to build out applications.
 
 # Usage
 

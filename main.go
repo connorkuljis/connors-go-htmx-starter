@@ -26,9 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := s.Routes(); err != nil {
-		log.Fatal(err)
-	}
+	s.Routes()
 
 	if err = s.ListenAndServe(); err != nil {
 		log.Fatal(err)
