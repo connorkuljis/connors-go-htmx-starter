@@ -1,8 +1,6 @@
 # Connors Go + HTMX Starter
 
-An opinionated example repo for building hypermedia applications with Golang.
-
-It is a starting point to build out applications.
+Building blocks for web apps.
 
 # Usage
 
@@ -41,9 +39,6 @@ Contains:
 └── views
     └── index.html
 ```
-
-## Pros
-- build and release the server really quickly by secure copying the binary to a vps.
 
 
 

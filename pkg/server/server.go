@@ -55,24 +55,25 @@ func NewServer(fileSystem fs.FS, logger *slog.Logger, port, templatesPath, stati
 
 func BuildTemplateStore(filesystem fs.FS, templatesPath string) (TemplateStore, error) {
 	var templateStore TemplateStore
-	componentsPath := filepath.Join(templatesPath, "components")
-	viewsPath := filepath.Join(templatesPath, "views")
 
 	base, err := fs.ReadDir(filesystem, templatesPath)
 	if err != nil {
 		return templateStore, err
 	}
+	templateStore.Base = buildMap(base, templatesPath)
+
+	componentsPath := filepath.Join(templatesPath, "components")
 	components, err := fs.ReadDir(filesystem, componentsPath)
 	if err != nil {
 		return templateStore, err
 	}
+	templateStore.Components = buildMap(components, componentsPath)
+
+	viewsPath := filepath.Join(templatesPath, "views")
 	views, err := fs.ReadDir(filesystem, viewsPath)
 	if err != nil {
 		return templateStore, err
 	}
-
-	templateStore.Base = buildMap(base, templatesPath)
-	templateStore.Components = buildMap(components, componentsPath)
 	templateStore.Views = buildMap(views, viewsPath)
 
 	return templateStore, nil
@@ -104,6 +105,7 @@ func (s *Server) ParseTemplates(name string, funcs template.FuncMap, templatefil
 	if err != nil {
 		err = fmt.Errorf("Error building template name='%s': %w", name, err)
 		s.Logger.Error(err.Error())
+		log.Fatal(err)
 	}
 	return tmpl
 }
@@ -124,22 +126,22 @@ func (s *Server) ListenAndServe() error {
 // safeTmplParse executes a given template to a bytes buffer. It returns the resulting buffer or nil, err if any error occurred.
 //
 // Templates are checked for missing keys to prevent partial data being written to the writer.
-func SafeTmplExec(tmpl *template.Template, name string, data any) ([]byte, error) {
+func (s *Server) SafeTmplExec(tmpl *template.Template, name string, data any) ([]byte, error) {
 	var bufBytes bytes.Buffer
 	tmpl.Option("missingkey=error")
 	err := tmpl.ExecuteTemplate(&bufBytes, name, data)
 	if err != nil {
-		log.Print(err)
+		s.Logger.Error(err.Error())
 		return bufBytes.Bytes(), err
 	}
 	return bufBytes.Bytes(), nil
 }
 
 // sendHTML writes a buffer a response writer as html
-func SendHTML(w http.ResponseWriter, bufBytes []byte) {
+func (s *Server) SendHTML(w http.ResponseWriter, bufBytes []byte) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	_, err := w.Write(bufBytes)
 	if err != nil {
-		log.Println(err)
+		s.Logger.Error(err.Error())
 	}
 }

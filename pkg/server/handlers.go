@@ -28,11 +28,11 @@ func (s *Server) HandleIndex() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		parcel := map[string]any{"Time": time.Now()}
-		htmlBytes, err := SafeTmplExec(t, "root", parcel)
+		htmlBytes, err := s.SafeTmplExec(t, "root", parcel)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		SendHTML(w, htmlBytes)
+		s.SendHTML(w, htmlBytes)
 	}
 }
