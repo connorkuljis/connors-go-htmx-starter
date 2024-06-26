@@ -1,7 +1,7 @@
 {{ define "layout" }}
-<div class="container">
-  <header>{{- template "header" . -}}</header>
+<body class="container">
+  {{- template "header" . -}}
   <main>{{- template "view" . -}}</main>
-  <footer>{{- template "footer" . -}}</footer>
-</div>
+  {{- template "footer" . -}}
+</body>
 {{ end }}
